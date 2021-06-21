@@ -1,7 +1,7 @@
 body {
     margin: 0;
     overflow: hidden;
-    font-size: 14;
+    font-size: 14px;
 }
 
 * {
@@ -31,7 +31,7 @@ body {
     padding-left: 10px;
     padding-right: 10px;
     color: #fff;
-    font-size: 18;
+    font-size: 18px;
     display: flex;
     align-items: center;
 }
@@ -192,7 +192,7 @@ body {
     justify-content: center;
     align-items: center;
     border-right: 1px solid lightgray;
-    font-weight: "bold";
+    font-weight: bold;
 }
 
 .row-name {
@@ -201,6 +201,7 @@ body {
     align-items: center;
     min-height: 25px;
     border-bottom: 1px solid lightgray;
+    font-weight: bold;
 }
 
 .cell-row {
