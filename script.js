@@ -1,3 +1,22 @@
+let defaultProperties = {
+    text: "",
+    "font-weight": "",
+    "font-style": "",
+    "text-decoration": "",
+    "text-align": "left",
+    "background-color": "#ffffff",
+    "color": "#000000",
+    "font-family": "Noto Sans",
+    "font-size": "14px"
+}
+
+let cellData = {
+    "Sheet1" : {}
+}
+
+let selectedSheet = "Sheet1";
+let totalSheets = 1;
+let lastlyAddedSheet = 1;
 $(document).ready(function () {
     let cellContainer = $(".input-cell-container");
 
@@ -74,13 +93,32 @@ $(document).ready(function () {
                     $(`#row-${rowId}-col-${colId+1}`).addClass("left-cell-selected");
                 }
             }
-            $(this).addClass("selected");
         }
         else {
             $(".input-cell.selected").removeClass("selected");
-            $(this).addClass("selected");
         }
-    })
+        $(this).addClass("selected");
+        changeHeader(this);
+    });
+
+    function changeHeader(ele) {
+        let [rowId,colId] = getRowCol(ele);
+        let cellInfo = defaultProperties;
+        if(cellData[selectedSheet][rowId] && cellData[selectedSheet][rowId][colId]) {
+            cellInfo = cellData[selectedSheet][rowId][colId];
+        }
+        cellInfo["font-weight"] ? $(".icon-bold").addClass("selected") : $(".icon-bold").removeClass("selected");
+        cellInfo["font-style"] ? $(".icon-italic").addClass("selected") : $(".icon-italic").removeClass("selected");
+        cellInfo["text-decoration"] ? $(".icon-underline").addClass("selected") : $(".icon-underline").removeClass("selected");
+        let alignment = cellInfo["text-align"];
+        $(".align-icon.selected").removeClass("selected");
+        $(".icon-align-" + alignment).addClass("selected");
+        $(".background-color-picker").val(cellInfo["background-color"]);
+        $(".text-color-picker").val(cellInfo["color"]);
+        $(".font-family-selector").val(cellInfo["font-family"]);
+        $(".font-family-selector").css("font-family", cellInfo["font-family"]);
+        $(".font-size-selector").val(cellInfo["font-size"]);
+    }
 
     $(".input-cell").dblclick(function () {
         $(".input-cell.selected").removeClass("selected");
@@ -91,6 +129,7 @@ $(document).ready(function () {
 
     $(".input-cell").blur(function(){
         $(".input-cell.selected").attr("contenteditable","false");
+        updateCell("text", $(this).text());
     })
 
     $(".input-cell-container").scroll(function () {
@@ -107,32 +146,161 @@ function getRowCol(ele) {
     return [rowId,colId];
 }
 
-function updateCell(property,value) {
+function updateCell(property,value,defaultPossible) {
     $(".input-cell.selected").each(function() {
         $(this).css(property,value);
-    })
+        let [rowId,colId] = getRowCol(this);
+        if(cellData[selectedSheet][rowId]) {
+            if(cellData[selectedSheet][rowId][colId]) {
+                cellData[selectedSheet][rowId][colId][property] = value;
+            } else {
+                cellData[selectedSheet][rowId][colId] = {...defaultProperties};
+                cellData[selectedSheet][rowId][colId][property] = value;
+            }
+        } else {
+            cellData[selectedSheet][rowId] = {};
+            cellData[selectedSheet][rowId][colId] = {...defaultProperties};
+            cellData[selectedSheet][rowId][colId][property] = value;
+        }
+        if(defaultPossible && (JSON.stringify(cellData[selectedSheet][rowId][colId]) === JSON.stringify(defaultProperties))) {
+            delete cellData[selectedSheet][rowId][colId];
+            if(Object.keys(cellData[selectedSheet][rowId]).length == 0) {
+                delete cellData[selectedSheet][rowId];
+            }
+        }
+    });
+    console.log(cellData);
 }
 
 $(".icon-bold").click(function() {
     if($(this).hasClass("selected")) {
-        updateCell("font-weight","");
+        updateCell("font-weight","",true);
     } else {
-        updateCell("font-weight","bold");
+        updateCell("font-weight","bold",false);
     }
 });
 
 $(".icon-italic").click(function() {
     if($(this).hasClass("selected")) {
-        updateCell("font-style","");
+        updateCell("font-style","",true);
     } else {
-        updateCell("font-style","italic");
+        updateCell("font-style","italic",false);
     }
 });
 
 $(".icon-underline").click(function() {
     if($(this).hasClass("selected")) {
-        updateCell("text-decoration","");
+        updateCell("text-decoration","",true);
     } else {
-        updateCell("text-decoration","underline");
+        updateCell("text-decoration","underline",false);
     }
 });
+
+$(".icon-align-left").click(function() {
+    if(!$(this).hasClass("selected")) {
+        updateCell("text-align","left",true);
+    }
+});
+
+$(".icon-align-center").click(function() {
+    if(!$(this).hasClass("selected")) {
+        updateCell("text-align","center",true);
+    }
+});
+
+$(".icon-align-right").click(function() {
+    if(!$(this).hasClass("selected")) {
+        updateCell("text-align","right",true);
+    }
+});
+
+$(".color-fill-icon").click(function(){
+    $(".background-color-picker").click();
+});
+
+$(".color-fill-text").click(function(){
+    $(".text-color-picker").click();
+});
+
+$(".background-color-picker").change(function(){
+    updateCell("background-color", $(this).val())
+});
+
+$(".text-color-picker").change(function(){
+    updateCell("color", $(this).val())
+});
+
+$(".font-family-selector").change(function() {
+    updateCell("font-family", $(this).val());
+    $(".font-family-selector").css("font-family", $(this).val());
+});
+
+$(".font-size-selector").change(function() {
+    updateCell("font-size", $(this).val());
+});
+
+
+function emptySheet() {
+    let sheetInfo = cellData[selectedSheet];
+    for(let i of Object.keys(sheetInfo)) {
+        for(let j of Object.keys(sheetInfo[i])) {
+            $(`#row-${i}-col-${j}`).text("");
+            $(`#row-${i}-col-${j}`).css("background-color", "#ffffff");
+            $(`#row-${i}-col-${j}`).css("color", "#000000");
+            $(`#row-${i}-col-${j}`).css("text-align", "left");
+            $(`#row-${i}-col-${j}`).css("font-weight", "");
+            $(`#row-${i}-col-${j}`).css("font-style", "");
+            $(`#row-${i}-col-${j}`).css("text-decoration", "");
+            $(`#row-${i}-col-${j}`).css("font-family", "Noto Sans");
+            $(`#row-${i}-col-${j}`).css("font-size", "14px");
+        }
+    }
+}
+
+function loadSheet() {
+    let sheetInfo = cellData[selectedSheet];
+    for(let i of Object.keys(sheetInfo)) {
+        for(let j of Object.keys(sheetInfo[i])) {
+            let cellInfo = cellData[selectedSheet][i][j];
+            $(`#row-${i}-col-${j}`).text(cellInfo["text"]);
+            $(`#row-${i}-col-${j}`).css("background-color", cellInfo["background-color"]);
+            $(`#row-${i}-col-${j}`).css("color", cellInfo["color"]);
+            $(`#row-${i}-col-${j}`).css("text-align", cellInfo["text-align"]);
+            $(`#row-${i}-col-${j}`).css("font-weight", cellInfo["font-weight"]);
+            $(`#row-${i}-col-${j}`).css("font-style", cellInfo["font-style"]);
+            $(`#row-${i}-col-${j}`).css("text-decoration", cellInfo["text-decoration"]);
+            $(`#row-${i}-col-${j}`).css("font-family", cellInfo["font-family"]);
+            $(`#row-${i}-col-${j}`).css("font-size", cellInfo["font-size"]);
+        }
+    }
+}
+
+$(".icon-add").click(function(){
+    emptySheet();
+    $(".sheet-tab.selected").removeClass("selected");
+    let sheetName = "Sheet" + (lastlyAddedSheet + 1);
+    cellData[sheetName] = {};
+    totalSheets += 1;
+    lastlyAddedSheet += 1;
+    selectedSheet = sheetName;
+    $(".sheet-tab-container").append(`<div class="sheet-tab selected">${sheetName}</div>`);
+    $(".sheet-tab.selected").click(function(){
+        if(!$(this).hasClass("selected")) {
+            selectSheet(this);
+        }
+    });
+});
+
+$(".sheet-tab").click(function(){
+    if(!$(this).hasClass("selected")) {
+        selectSheet(this);
+    }
+});
+
+function selectSheet(ele) {
+    $(".sheet-tab.selected").removeClass("selected");
+    $(ele).addClass("selected");
+    emptySheet();
+    selectedSheet = $(ele).text();
+    loadSheet();
+}
